@@ -71,6 +71,7 @@ function DeclinedLeaves() {
         <main className="w-4/5 p-10">
           <h1 className="text-3xl font-bold mb-8">Declined Leaves</h1>
 
+
           <div className="bg-white p-8 shadow-lg rounded-md">
             <table className="min-w-full table-auto">
               <thead>
