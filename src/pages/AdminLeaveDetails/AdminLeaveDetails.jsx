@@ -22,6 +22,10 @@ function LeaveDetails() {
   const sigCanvasSupervisor = useRef({});
   const sigCanvasManager = useRef({});
   const sigCanvasGM = useRef({});
+  
+  const [deductionType, setDeductionType] = useState('');
+  const [deductionAmount, setDeductionAmount] = useState('');
+  const [deductionReason, setDeductionReason] = useState('');
 
   const [leave, setLeave] = useState();
   const [actions, setActions] = useState({});
@@ -54,7 +58,23 @@ function LeaveDetails() {
   const [supervisorSignature, setSupervisorSignature] = useState(null);
   const [generalManagerSignature, setGeneralManagerSignature] = useState(null);
 
+  const handleSave = () => {
+    console.log("Data saved!");
+  };
+  
+  const handleClear = () => {
+    setDeductionType("");
+    setDeductionAmount("");
+    setDeductionReason("");
+    console.log("Form cleared!");
+  };
+
   const navigate = useNavigate();
+
+  function handleSubmit() {
+    console.log("Form submitted");
+    alert("Form has been submitted successfully!");
+  }
 
   // this signature is for submitting signature
   const [signature, setSignature] = useState("");
@@ -420,6 +440,69 @@ function LeaveDetails() {
                   </tbody>
                 </table>}
               </div>
+
+              <div className="mb-8 p-6 border rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">DEDUCTIONS</h3>
+                <div className="pl-4">
+                <div className="flex items-center mb-4">
+                  <label htmlFor="deductionType" className="w-32 text-right font-semibold mr-4">
+                    Deduction Type:
+                  </label>
+                  <select
+                    id="deductionType"
+                    value={deductionType}
+                    onChange={(e) => setDeductionType(e.target.value)}
+                    className="border p-2 rounded w-full"
+                  >
+                    <option value="">Select deduction type</option>
+                    <option value="Undertime">Undertime</option>
+                    {/* Add more options here if needed */}
+                  </select>
+                </div>
+                  <div className="flex items-center mb-4">
+                    <label htmlFor="deductionAmount" className="w-32 text-right font-semibold mr-4">
+                      Amount:
+                    </label>
+                    <input
+                      type="number"
+                      id="deductionAmount"
+                      value={deductionAmount}
+                      onChange={(e) => setDeductionAmount(e.target.value)}
+                      className="border p-2 rounded w-full"
+                      placeholder="Enter amount"
+                    />
+                  </div>
+                  <div className="flex items-start mb-4">
+                    <label htmlFor="deductionReason" className="w-32 text-right font-semibold mr-4">
+                      Reason:
+                    </label>
+                    <textarea
+                      id="deductionReason"
+                      value={deductionReason}
+                      onChange={(e) => setDeductionReason(e.target.value)}
+                      className="border rounded w-full p-2"
+                      placeholder="Enter reason for deduction"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-4">                   
+                    <button
+                      onClick={handleClear}
+                      className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-2 px-4 rounded"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+
 
 
               {/* HR Officer Signature */}
@@ -866,6 +949,15 @@ function LeaveDetails() {
                 </button>
               </div>
             </div>
+            <div className="flex justify-end mt-8">
+              <button
+                type="button"
+                onClick={handleSubmit}
+                className="bg-green-500 text-white font-bold py-3 px-6 rounded"
+              >
+                Submit
+              </button>
+            </div>
           </div>
         </main>
       </div>
@@ -901,7 +993,10 @@ function LeaveDetails() {
                 </button>
               </div>
             </div>
+          
+            
           </div>
+          
         )
       }
     </>

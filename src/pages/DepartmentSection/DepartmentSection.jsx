@@ -166,17 +166,18 @@ function DepartmentSection() {
             </div>
 
             <div className="flex justify-end">
-              <button
-                onClick={handleEditSubmit}
-                className="bg-blue-500 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 mr-2"
-              >
-                Save
-              </button>
+              
               <button
                 onClick={closeModal}
-                className="bg-gray-500 text-white font-bold py-2 px-4 rounded-md hover:bg-gray-700"
+                className="bg-gray-500 text-white font-bold py-2 px-4 rounded-md hover:bg-gray-700 mr-2"
               >
                 Cancel
+              </button>
+              <button
+                onClick={handleEditSubmit}
+                className="bg-blue-500 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 "
+              >
+                Save
               </button>
             </div>
           </div>
