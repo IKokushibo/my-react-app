@@ -16,6 +16,8 @@ function LeaveTypeSection() {
     defaultDuration: ''
   });
 
+  const [isMounted, setIsMounted] = useState(false);
+
   const navigate = useNavigate(); // <-- Initialize useNavigate hook
 
   // Fetch leave types from the API
@@ -31,7 +33,7 @@ function LeaveTypeSection() {
     };
 
     getTypeOfLeave();
-  }, []);
+  }, [isMounted]);
 
   // Open the edit modal with pre-filled data
   const handleEdit = (leave) => {
@@ -51,9 +53,10 @@ function LeaveTypeSection() {
     try {
       const confirmDelete = window.confirm("Are you sure you want to remove this leave type?");
       if (confirmDelete) {
-        const url = `/users/admin/type-of-leaves/${id}`;
+        const url = `/users/admin/type-of-leaves/delete-type-of-leave/${id}`;
         await axios.delete(url);
         setTypeOfLeaves(typeOfLeaves.filter(leave => leave.id !== id));
+        setIsMounted(value => !value);
       }
     } catch (error) {
       console.log("Error removing leave type", error);
@@ -63,7 +66,7 @@ function LeaveTypeSection() {
   // Save updated leave type
   const handleSave = async () => {
     try {
-      const url = `/users/admin/type-of-leaves/${formData.id}`;
+      const url = `/users/admin/type-of-leaves/update-type-of-leave/${formData.id}`;
       const response = await axios.put(url, {
         'leave-type': formData.leaveType,
         description: formData.description,
@@ -78,6 +81,8 @@ function LeaveTypeSection() {
         );
         setTypeOfLeaves(updatedLeaves);
         setIsModalOpen(false); // Close modal after successful update
+        setIsMounted(value => !value);
+        console.log(response);
       }
     } catch (error) {
       console.log("Error updating leave type", error);

@@ -14,7 +14,6 @@ api.interceptors.request.use(
     // Check if we are on the login page
     if (config.url === '/login-admin' || config.url === '/login-user') {
       // Do not attach the token or trigger refresh logic for login requests
-      alert("nasa login tayo");
       return config;
     }
 

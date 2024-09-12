@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import Sidebar from '../../Components/Sidebar';
 
 import axios from "../../services/AxiosConfiguration"
 import { useNavigate } from 'react-router-dom';
+
+import Loading from "../../Components/LoadingAnimation/Loading";
 
 function AddNewLeaveType() {
   const [leaveType, setLeaveType] = useState("");
@@ -13,19 +15,23 @@ function AddNewLeaveType() {
   const [restorationPeriod, setRestorationPeriod] = useState("");
   const [purpose, setPurpose] = useState("");
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [typeOfLeaves, setTypeOfLeaves] = useState({});
+  const [typeOfLeaveId, setTypeOfLeaveId] = useState("");
+
   const navigate = useNavigate();
 
   const leaveTypeHandler = (event) => {
-      setLeaveType(event.target.value);
+    setLeaveType(event.target.value);
   }
   const descriptionHandler = (event) => {
-      setDescription(event.target.value);
+    setDescription(event.target.value);
   }
   const requirementsHandler = (event) => {
-      setRequirements(event.target.value);
+    setRequirements(event.target.value);
   }
   const leaveCreditAvailableHandler = (event) => {
-      setLeaveCreditAvailable(event.target.value);
+    setLeaveCreditAvailable(event.target.value);
   }
   const restorationHandler = (event) => {
     setRestorationPeriod(event.target.value);
@@ -34,24 +40,48 @@ function AddNewLeaveType() {
     setPurpose(event.target.value);
   }
 
-  const submitHandler = async() =>{
-    try{
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const url = "/users/admin/type-of-leaves";
+        const response = await axios.get(url);
+        setTypeOfLeaves(response.data);
+      } catch (error) {
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  const submitHandler = async () => {
+    try {
       const url = "/users/admin/type-of-leaves/add-type-of-leave";
-      const response = await axios.post(url,{
-        "leave-type" : leaveType,
+      const response = await axios.post(url, {
+        "leave-type": leaveType,
         description,
         requirements,
-        "type-of-restoration" : purpose,
-        "default-duration" : leaveCreditAvailable,
-        "restoration-period" : restorationPeriod
+        "type-of-restoration": purpose,
+        "default-duration": leaveCreditAvailable,
+        "restoration-period": restorationPeriod,
+        'type-of-leave-producer-id' : typeOfLeaveId
       });
 
-      if(response.status === 201){
+      if (response.status === 201) {
         navigate("/admin/leave-type");
       }
-    }catch(error){
+    } catch (error) {
       console.log(error);
     }
+  }
+
+  if (isLoading) {
+    return (
+      <>
+        <Loading />
+      </>
+    )
   }
 
   return (
@@ -62,8 +92,6 @@ function AddNewLeaveType() {
 
       <div className="flex flex-col lg:flex-row min-h-screen">
         <Sidebar />
-
-
 
         {/* Main Content */}
         <main className="w-full lg:w-3/4 p-10 bg-gray-100">
@@ -112,6 +140,17 @@ function AddNewLeaveType() {
                   <option value="12">Every 12 Months</option>
                 </select>
               </div>
+
+              <div>
+                <label className="block text-sm font-bold mb-2">Credit producer</label>
+                <select className="border w-full p-2 rounded" onChange={(event) => setTypeOfLeaveId(event.target.value)}>
+                  <option>Choose..</option>
+                  {Array.isArray(typeOfLeaves) && typeOfLeaves.map((element, index) => (
+                    <option key={index} value={element.id}>{element['leave-type']}</option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-sm font-bold mb-2">Purpose:</label>
                 <select className="border w-full p-2 rounded" onChange={(event) => purposeHandler(event)}>
