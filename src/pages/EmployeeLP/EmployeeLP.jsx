@@ -35,6 +35,7 @@ function Employee() {
         const url = "/users/me";
         const response = await axios.get(url);
         setUser(response.data);
+        console.log(response)
       } catch (error) {
         setIsError(true);
         setError(error);
@@ -48,9 +49,8 @@ function Employee() {
   const logoutHandler = async () => {
     try {
       setIsLoading(true);
-      const url = "/users/log-out";
+      const url = "/users/auth/logout";
       const response = await axios.post(url);
-      console.log(response)
       if (response.status === 200) {
         localStorage.removeItem("accessToken");
         navigate("/login-user");

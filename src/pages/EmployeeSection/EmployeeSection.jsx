@@ -15,11 +15,13 @@ function EmployeeSection() {
   const [error, setError] = useState();
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [contactNumber, setContactNumber] = useState('');
   const [contactNumberError, setContactNumberError] = useState('');
-  const [password, setPassword] = useState('');
+
+  const [isMounted, setIsMounted] = useState(false);
+
+  const [contactNumber, setContactNumber] = useState('');
   const [position, setPosition] = useState('');
-  const [departmentId, setDepartmentId] = useState('');
+  const [departmentId, setDepartmentId] = useState(null);
   const [role, setRole] = useState('');
   const [gender, setGender] = useState('');
   const [departments, setDepartments] = useState([]);
@@ -58,22 +60,25 @@ function EmployeeSection() {
 
   const updateEmployeeHandler = async () => {
     try {
-      const updatedEmployee = {
-        ...selectedEmployee,
-        contactNumber,
-        password,
+      const url = `/users/admin/employees/update-employee/${selectedEmployee["user-id"]}`;
+      const response = await axios.put(url, {
+        "department-id" : departmentId,
+        "employee-id" : selectedEmployee['employee-id'],
+        "first-name" : selectedEmployee['first-name'],
+        "middle-name" : selectedEmployee['middle-name'],
+        "last-name" : selectedEmployee['last-name'],
+        "phone-number" : selectedEmployee['contact-number'],
         position,
-        departmentId,
         role,
-        gender,
-      };
-
-      const url = `/users/admin/update-employee/${updatedEmployee["employee-id"]}`;
-      await axios.put(url, updatedEmployee);
-      setEmployees(employees.map(emp => emp["employee-id"] === updatedEmployee["employee-id"] ? updatedEmployee : emp));
-      setIsModalOpen(false);
+        gender
+      });      
+      if(response.status === 200){
+        setIsModalOpen(false);
+        setIsMounted(value => !value);
+      }
     } catch (error) {
-      console.error("Error updating employee:", error);
+      setError(error);
+      setIsError(true);
     }
   };
 
@@ -87,10 +92,6 @@ function EmployeeSection() {
     } else {
       setContactNumberError('');
     }
-  };
-
-  const passwordHandler = (value) => {
-    setPassword(value);
   };
 
   const positionHandler = (value) => {
@@ -113,12 +114,8 @@ function EmployeeSection() {
         const url = "/users/admin/all-employees";
         const response = await axios.get(url);
         setEmployees(response.data);
-        console.log(response.data);
-
-
         const deptResponse = await axios.get("/users/departments");
         setDepartments(deptResponse.data);
-        console.log(deptResponse.data);
 
       } catch (error) {
         setError(error);
@@ -130,7 +127,7 @@ function EmployeeSection() {
     return () => {
       controller.abort(); 
     };
-  }, []);
+  }, [isMounted]);
 
   if (isLoading) {
     return (
@@ -138,20 +135,6 @@ function EmployeeSection() {
         <Loading />
       </>
     );
-  }
-
-  if (isError) {
-    const status = error.status;
-    if (status === 401) {
-      return (
-        <>
-          <MessageBox
-            message={error.response.data.message}
-            action={unauthorizedhandler}
-          />
-        </>
-      );
-    }
   }
 
   return (
@@ -288,15 +271,11 @@ function EmployeeSection() {
                   <input
                     type="text"
                     className="border w-full p-2 rounded"
-                    value={contactNumber}
+                    value={contactNumber ? contactNumber : selectedEmployee['contact-number']}
                     onChange={handleContactNumberChange}
                     placeholder="09xxxxxxxxx or +639xxxxxxxxx"
                   />
                   {contactNumberError && <p className="text-red-500 text-sm mt-1">{contactNumberError}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-bold mb-2">Password</label>
-                  <input type="password" onChange={(e) => passwordHandler(e.target.value)} className="border w-full p-2 rounded" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold mb-2">Position</label>

@@ -15,9 +15,17 @@ function AddNewLeaveType() {
   const [restorationPeriod, setRestorationPeriod] = useState("");
   const [purpose, setPurpose] = useState("");
 
+  const [listOfDetails, setListOfDetails] = useState([]);
+  const [details, setDetails] = useState("");
+  const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [categoryId, setCategoryId] = useState(0);
+
+  const [isChecked, setIsChecked] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [typeOfLeaves, setTypeOfLeaves] = useState({});
-  const [typeOfLeaveId, setTypeOfLeaveId] = useState("");
+  const [typeOfLeaveId, setTypeOfLeaveId] = useState(0);
 
   const navigate = useNavigate();
 
@@ -39,6 +47,25 @@ function AddNewLeaveType() {
   const purposeHandler = (event) => {
     setPurpose(event.target.value);
   }
+  const detailsOfLeaveHandler = (value) => {
+    setListOfDetails(prevDetail => [...prevDetail, value])
+    setDetails("");
+  }
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const url = "/users/categories";
+        const response = await axios.get(url);
+        setCategories(response.data);
+      } catch (error) {
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,6 +82,11 @@ function AddNewLeaveType() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    setCategory("");
+    setListOfDetails([]);
+  }, [isChecked]);
+
   const submitHandler = async () => {
     try {
       const url = "/users/admin/type-of-leaves/add-type-of-leave";
@@ -65,7 +97,10 @@ function AddNewLeaveType() {
         "type-of-restoration": purpose,
         "default-duration": leaveCreditAvailable,
         "restoration-period": restorationPeriod,
-        'type-of-leave-producer-id' : typeOfLeaveId
+        'type-of-leave-producer-id': typeOfLeaveId,
+        category,
+        "category-id": categoryId,
+        "details-of-category": listOfDetails
       });
 
       if (response.status === 201) {
@@ -159,6 +194,32 @@ function AddNewLeaveType() {
                   <option value="USE_IT_OR_LOSE_IT">No Adding and Yearly restoration</option>
                   <option value="CARRYOVER_LEAVE_WITH_LAST_RESTORATION">For Restoration</option>
                 </select>
+              </div>
+
+              <div className='border p-4 space-y-4'>
+                <label className="block text-sm font-bold mb-2">Details of Leave:</label>
+                <div className='space-y-4'>
+                  <select className='w-full p-2 border' disabled={isChecked} onChange={(e) => setCategoryId(e.target.value)}>
+                    <option value="">Choose category</option>
+                    {Array.isArray(categories) && categories.map((element, index) => (
+                      <option key={index} value={element.id}>{element.category}</option>
+                    ))}
+                  </select>
+                  <div className='flex justify-start gap-2 items-center'>
+                    <input type="checkbox" onChange={() => setIsChecked(value => !value)} />
+                    <h1>Create new</h1>
+                  </div>
+                  <input disabled={!isChecked} className='w-full h-9 border p-2' placeholder='Category' type="text" value={category} onChange={(e) => setCategory(e.target.value)} />
+                </div>
+                <div className='space-y-2'>
+                  <input className='w-full h-9 border p-2' placeholder='specific details' type="text" value={details} onChange={(e) => setDetails(e.target.value)} />
+                  <button onClick={() => detailsOfLeaveHandler(details)} className='w-20 h-7 rounded bg-yellow-500 text-white font-bold' type='button'>add</button>
+                </div>
+                <div className='border p-4'>
+                  {Array.isArray(listOfDetails) && listOfDetails.map((element, index) => (
+                    <h1 key={index}>{element}</h1>
+                  ))}
+                </div>
               </div>
 
               <button type='button' onClick={submitHandler} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md w-full mt-6">

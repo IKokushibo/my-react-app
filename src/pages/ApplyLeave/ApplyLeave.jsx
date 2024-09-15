@@ -37,11 +37,12 @@ function ApplyLeave() {
   const [salary, setSalary] = useState();
 
   const [typeOfLeaves, setTypeOfLeaves] = useState({});
+  const [typeOfLeaveWithCategory, setTypeOfLeaveWithCategory] = useState(null);
 
-  const [leaveTypeId, setLeaveTypeId] = useState();
+  const [leaveTypeId, setLeaveTypeId] = useState(null);
 
   const [detailsOfLeave, setDeatailsOfLeave] = useState();
-  const [specifiedDetailsOfLeave, setSpecifiedDeatailsOfLeave] = useState();
+  const [specifiedDetailsOfLeave, setSpecifiedDeatailsOfLeave] = useState("");
   const [commutation, setCommutation] = useState();
 
 
@@ -55,9 +56,9 @@ function ApplyLeave() {
   //   setSignature(signatureData);
   // };
 
-  const handleSelection = (event) => {
-    const selectedId = parseInt(event.target.value, 10); // Get the value (ID) of the selected leave
-    setLeaveTypeId(selectedId); // Update state with the selected ID
+  const handleSelection = (element) => {
+    setTypeOfLeaveWithCategory(element);
+    setLeaveTypeId(element.id);
   };
 
   const getCanvasWidth = () => {
@@ -79,18 +80,6 @@ function ApplyLeave() {
 
     return count;
   };
-
-  const detailsOfLeaveCheckedHandler = (event) => {
-    if (detailsOfLeave === event.target.value) {
-      setDeatailsOfLeave("");
-      return;
-    }
-    setDeatailsOfLeave(event.target.value);
-  }
-
-  const specifiedDetailsOfLeaveHandler = (event) => {
-    setSpecifiedDeatailsOfLeave(event.target.value);
-  }
 
   useEffect(() => {
     if (startDate && endDate) {
@@ -151,8 +140,9 @@ function ApplyLeave() {
         "signature": signatureData,
         "commutation-type": commutation
       });
-
-      alert(response.data);
+      if(response.status === 201){
+        alert(response.data)
+      }
     } catch (error) {
       setIsError(true);
       setError(error);
@@ -171,13 +161,13 @@ function ApplyLeave() {
   if (isError) {
     const status = error.status;
 
-    if(status === 403){
+    if (status === 403) {
       alert(error.response.data.message)
-    }else if(status === 400){
+    } else if (status === 400) {
       alert(error.response.data.message)
-    }else if (status === 401) {
+    } else if (status === 401) {
       alert("Session expired");
-    }else if (error.code === "ERR_NETWORK") {
+    } else if (error.code === "ERR_NETWORK") {
       alert("Network Error");
     }
 
@@ -214,7 +204,7 @@ function ApplyLeave() {
               </div>
               <div>
                 <label className="block text-sm font-bold mb-2">Position</label>
-                <input defaultValue={user.position} type="text" className="border w-full p-2 rounded" disabled/>
+                <input defaultValue={user.position} type="text" className="border w-full p-2 rounded" disabled />
               </div>
               <div>
                 <label className="block text-sm font-bold mb-2">Salary</label>
@@ -232,7 +222,7 @@ function ApplyLeave() {
                       type="checkbox"
                       value={element.id}
                       checked={leaveTypeId === element.id}
-                      onChange={handleSelection}
+                      onChange={() => handleSelection(element)}
                       className="mr-2"
                     />
                     <strong>{element['leave-type']}</strong> ({element.description})
@@ -245,85 +235,24 @@ function ApplyLeave() {
             {/* Details of Leave */}
 
 
-            <fieldset className="border p-4 rounded">
+            {typeOfLeaveWithCategory ? <fieldset className="border p-4 rounded">
               <legend className="font-bold">Details of Leave</legend>
+
               <div className="flex flex-col space-y-4 mt-4">
-
-
                 <div>
-                  <h4 className="font-semibold">In case of Vacation/Special Privilege Leave:</h4>
+                  <h4 className="font-semibold">{typeOfLeaveWithCategory['category-of-leave'].category}</h4>
                   <div className="flex flex-col space-y-2 mt-2">
-                    <label className="flex items-center">
-                      <input checked={detailsOfLeave === "Within the Philippines"} onChange={(event) => detailsOfLeaveCheckedHandler(event)} value="Within the Philippines" type="checkbox" className="mr-2" />
-                      Within the Philippines
-                    </label>
-                    <label className="flex items-center">
-                      <input checked={detailsOfLeave === "Abroad"} onChange={(event) => detailsOfLeaveCheckedHandler(event)} value="Abroad" type="checkbox" className="mr-2" />
-                      Abroad (Specify)
-                    </label>
-                    <input onChange={(event) => specifiedDetailsOfLeaveHandler(event)} value={(detailsOfLeave !== "Within the Philippines" && detailsOfLeave !== "Abroad") ? "" : specifiedDetailsOfLeave} disabled={detailsOfLeave !== "Within the Philippines" && detailsOfLeave !== "Abroad"} type="text" className="border w-full p-2 rounded mt-2" placeholder="Specify location" />
+                    {typeOfLeaveWithCategory['category-of-leave']['specified-details-of-leave-response-dto-list'].map((element, index) => (
+                      <label key={index} className="flex items-center">
+                        <input onChange={() => setDeatailsOfLeave(element.details)} type="checkbox" className="mr-2" />
+                        {element.details}
+                      </label>
+                    ))}
+                    <input onChange={(event) => setSpecifiedDeatailsOfLeave(event.target.value)} value={specifiedDetailsOfLeave} type="text" className="border w-full p-2 rounded mt-2" />
                   </div>
                 </div>
-
-
-                <div>
-                  <h4 className="font-semibold">In case of Sick Leave:</h4>
-                  <div className="flex flex-col space-y-2 mt-2">
-                    <label className="flex items-center">
-                      <input  checked={detailsOfLeave === "In Hospital"} onChange={(event) => detailsOfLeaveCheckedHandler(event)} value="In Hospital" type="checkbox" className="mr-2" />
-                      In Hospital (Specify Illness)
-                    </label>
-                    <input onChange={(event) => specifiedDetailsOfLeaveHandler(event)} value={detailsOfLeave !== "In Hospital" ? "" : specifiedDetailsOfLeave} disabled={detailsOfLeave !== "In Hospital"} type="text" className="border w-full p-2 rounded mt-2" placeholder="Specify illness" />
-                    <label className="flex items-center">
-                      <input checked={detailsOfLeave === "Out Patient"} onChange={(event) => detailsOfLeaveCheckedHandler(event)} value="Out Patient" type="checkbox" className="mr-2" />
-                      Out Patient (Specify Illness)
-                    </label>
-                    <input onChange={(event) => specifiedDetailsOfLeaveHandler(event)} value={detailsOfLeave !== "Out Patient" ? "" : specifiedDetailsOfLeave} disabled={detailsOfLeave !== "Out Patient"} type="text" className="border w-full p-2 rounded mt-2" placeholder="Specify illness" />
-                  </div>
-                </div>
-
-
-
-
-                <div>
-                  <h4 className="font-semibold">In case of Special Benefits for Women:</h4>
-                  <input onChange={(event) => specifiedDetailsOfLeaveHandler(event)} type="text" className="border w-full p-2 rounded mt-2" placeholder="Specify illness" />
-                </div>
-
-
-
-                <div>
-                  <h4 className="font-semibold">In case of Study Leave:</h4>
-                  <div className="flex flex-col space-y-2 mt-2">
-                    <label className="flex items-center">
-                      <input checked={detailsOfLeave === "Completion of Master's Degree"} onChange={(event) => detailsOfLeaveCheckedHandler(event)} value="Completion of Master's Degree" type="checkbox" className="mr-2" />
-                      Completion of Master's Degree
-                    </label>
-                    <label className="flex items-center">
-                      <input checked={detailsOfLeave === "BAR/Board Examination Review"} onChange={(event) => detailsOfLeaveCheckedHandler(event)} value="BAR/Board Examination Review" type="checkbox" className="mr-2" />
-                      BAR/Board Examination Review
-                    </label>
-                  </div>
-                </div>
-
-
-                <div>
-                  <h4 className="font-semibold">Other Purposes:</h4>
-                  <div className="flex flex-col space-y-2 mt-2">
-                    <label className="flex items-center">
-                      <input checked={detailsOfLeave === "Monetization of Leave Credits"} onChange={(event) => detailsOfLeaveCheckedHandler(event)} value="Monetization of Leave Credits" type="checkbox" className="mr-2" />
-                      Monetization of Leave Credits
-                    </label>
-                    <label className="flex items-center">
-                      <input checked={detailsOfLeave === "Terminal Leave"} onChange={(event) => detailsOfLeaveCheckedHandler(event)} value="Terminal Leave" type="checkbox" className="mr-2" />
-                      Terminal Leave
-                    </label>
-                  </div>
-                </div>
-
-
               </div>
-            </fieldset>
+            </fieldset> : ""}
 
 
             {/* Number of Days */}

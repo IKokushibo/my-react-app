@@ -57,9 +57,14 @@ function LoginAdmin() {
   }
 
   if (isError) {
+    if(error.status === 401){
+      alert(error.response.data.message);
+    }
     if (error.code === "ERR_NETWORK") {
       alert("No Internet Connection");
     }
+
+    setIsError(value => !value);
   }
 
   return (

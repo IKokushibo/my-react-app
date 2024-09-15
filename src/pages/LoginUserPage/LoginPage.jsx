@@ -49,6 +49,12 @@ function Login() {
     )
   }
 
+  if(isError){
+    
+    alert(error.response.data.message);
+    setIsError(value => !value);
+  }
+
   return (
     <>
       <Helmet>

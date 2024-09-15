@@ -115,8 +115,9 @@ function Dashboard() {
   const logoutHandler = async () => {
     try {
       setIsLoading(true);
-      const url = "/users/log-out";
+      const url = "/users/auth/logout";
       const response = await axios.post(url);
+      console.log(response);
       if (response.status === 200) {
         navigate("/login-admin");
         localStorage.removeItem("accessToken");

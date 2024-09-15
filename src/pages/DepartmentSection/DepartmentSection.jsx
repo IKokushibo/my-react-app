@@ -10,6 +10,7 @@ function DepartmentSection() {
   const [departmentName, setDepartmentName] = useState("");
   const [shortForm, setShortForm] = useState("");
   const [code, setCode] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
 
   const navigateAddType = () => {
     window.location.href = "/admin/add-department";
@@ -38,6 +39,7 @@ function DepartmentSection() {
       if (response.status === 200) {
         setDepartments(departments.map(dept => dept.id === currentDepartment.id ? response.data : dept));
         closeModal();
+        setIsMounted(value => !value);
       }
     } catch (error) {
       console.error("Error updating department:", error);
@@ -46,9 +48,12 @@ function DepartmentSection() {
 
   const handleRemove = async (departmentId) => {
     try {
-      const url = `/users/departments/${departmentId}`;
-      await axios.delete(url);
+      const url = `/users/admin/delete-department/${departmentId}`;
+      const response = await axios.delete(url);
       setDepartments(departments.filter((dept) => dept.id !== departmentId));
+      if(response.status === 200){
+        setIsMounted(value => !value);
+      }
     } catch (error) {
       console.error("Error removing department:", error);
     }
@@ -66,7 +71,7 @@ function DepartmentSection() {
     };
 
     getDepartments();
-  }, []);
+  }, [isMounted]);
 
   return (
     <>
