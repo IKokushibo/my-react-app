@@ -144,6 +144,7 @@ function ApplyLeave() {
         alert(response.data)
       }
     } catch (error) {
+      console.log(error)
       setIsError(true);
       setError(error);
     }

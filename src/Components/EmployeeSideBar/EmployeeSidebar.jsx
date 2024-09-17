@@ -7,46 +7,38 @@ import Lock from "../lock.svg";
 import Logout from "./logout.svg";
 import { useNavigate } from 'react-router-dom';
 import axios from '../../services/AxiosConfiguration';
+import Loading from "../../Components/LoadingAnimation/Loading"; // Import Loading component
 
 function Sidebar1() {
   const navigate = useNavigate();
-  const [isClicked, setIsClicked] = useState(false);
   const [isLoading, setIsLoading] = useState(false); // Manage loading state
   const [isError, setIsError] = useState(false); // Manage error state
   const [error, setError] = useState(null);
 
-  const isClickedHandler = () => {
-    setIsClicked(!isClicked);
-  };
-
   const navigateDashboard = () => {
-    window.location.href = '/employee/landing-page';
+    navigate('/employee/landing-page');
   };
 
   const navigateApplyLeave = () => {
-    window.location.href = '/employee/apply-leave';
+    navigate('/employee/apply-leave');
   };
 
   const navigateHistory = () => {
-    window.location.href = '/employee/leave-history';
+    navigate('/employee/leave-history');
   };
 
   const navigateCredits = () => {
-    window.location.href = '/employee/leave-credits';
-  };
-
-  const navigateLandingPage = () => {
-    window.location.href = '/employee/landing-page';
+    navigate('/employee/leave-credits');
   };
 
   const navigateChangePassword = () => {
-    window.location.href = '/account/change-password';
+    navigate('/account/change-password');
   };
 
   const logoutHandler = async () => {
     try {
       setIsLoading(true);
-      const url = '/users/log-out';
+      const url = '/users/auth/logout'; // Adjust this URL to match your actual API endpoint
       const response = await axios.post(url);
       if (response.status === 200) {
         localStorage.removeItem('accessToken');
@@ -59,11 +51,26 @@ function Sidebar1() {
     setIsLoading(false);
   };
 
+  if (isLoading) {
+    return <Loading />; // Display loading animation if the logout request is still processing
+  }
+
+  if (isError) {
+    const status = error?.response?.status;
+    if (status === 401) {
+      alert("Session expired");
+      localStorage.removeItem("accessToken");
+      navigate('/login-user');
+    } else if (error.code === "ERR_NETWORK") {
+      alert("Network Error. Please try again.");
+    }
+  }
+
   return (
     <>
       {/* Sidebar */}
       <aside className="w-25% max-w-337.25px bg-blue-500 text-white p-8">
-        <h1 onClick={navigateLandingPage} className="text-4xl font-bold mb-20 text-center">
+        <h1 onClick={navigateDashboard} className="text-4xl font-bold mb-20 text-center">
           Employee Leave Management
         </h1>
 
@@ -93,7 +100,6 @@ function Sidebar1() {
                 <span className="text-xl">Leave Credits Remaining</span>
               </button>
             </li>
-
             <li className="mb-5">
               <button onClick={navigateChangePassword} className="flex items-center space-x-2 hover:bg-blue-700 p-2 rounded-md w-full">
                 <img src={Lock} className="size-7" alt="" />

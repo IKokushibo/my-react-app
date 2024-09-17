@@ -1,12 +1,11 @@
 import { Helmet } from 'react-helmet'
 import EnvelopeICO from './Mail.svg'
-import Password from './Password.svg'
 import Arrow from './Arrow_Right_SM.svg'
 import React, { useState } from 'react';
 
 import axios from '../../services/AxiosConfiguration'
 
-// componenets
+// components
 import Loading from "../../Components/LoadingAnimation/Loading"
 import { useNavigate } from 'react-router-dom';
 
@@ -14,6 +13,7 @@ function LoginAdmin() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false); // State for password visibility
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const [error, setError] = useState();
@@ -28,6 +28,10 @@ function LoginAdmin() {
     setPassword(event.target.value)
   }
   
+  const togglePasswordVisibility = () => {
+    setIsPasswordVisible(!isPasswordVisible); // Toggle password visibility
+  }
+
   const loginHandler = async () => {
     try {
       setIsLoading(true);
@@ -57,7 +61,7 @@ function LoginAdmin() {
   }
 
   if (isError) {
-    if(error.status === 401){
+    if (error.status === 401) {
       alert(error.response.data.message);
     }
     if (error.code === "ERR_NETWORK") {
@@ -83,19 +87,31 @@ function LoginAdmin() {
 
           <div className="flex-col h-300px w-400px flex items-center">
 
-            <div className="flex relative ">
+            <div className="flex relative">
               <input className="rounded-xl w-378px h-67px mb-10 p-5" type="text" id="Email" onChange={(event) => { emailHandler(event) }} placeholder=" Email Address" />
               <img className="size-7 absolute right-3 top-5" src={EnvelopeICO} alt="Envelope" />
             </div>
 
-            <div className="flex relative ">
-              <input className="rounded-xl w-378px h-67px p-5" type="password" id="Password" onChange={(event) => { passwordHandler(event) }} placeholder=" Password" />
-              <img className="size-7 absolute right-3 top-5" src={Password} alt="Envelope" />
+            <div className="flex relative">
+              <input
+                className="rounded-xl w-378px h-67px p-5"
+                type={isPasswordVisible ? "text" : "password"} // Toggle between text and password
+                id="Password"
+                onChange={(event) => { passwordHandler(event) }}
+                placeholder=" Password"
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-5 text-blue-black hover:text-black font-bold"
+                onClick={togglePasswordVisibility}
+              >
+                {isPasswordVisible ? "Hide" : "Show"}
+              </button>
             </div>
 
             <div className="flex relative top-16 ">
               <button type='button' className='hover:bg-pageBg1 rounded-xl w-378px h-67px p-5 bg-white font-bold text-20px' onClick={loginHandler}>Login</button>
-              <img className="size-6 absolute right-32 top-6" src={Arrow} alt="Envelope" />
+              <img className="size-6 absolute right-32 top-6" src={Arrow} alt="Arrow" />
             </div>
           </div>
         </div>
@@ -107,4 +123,4 @@ function LoginAdmin() {
   )
 }
 
-export default LoginAdmin
+export default LoginAdmin;

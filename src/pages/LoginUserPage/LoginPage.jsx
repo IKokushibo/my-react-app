@@ -1,6 +1,5 @@
 import { Helmet } from 'react-helmet'
 import EnvelopeICO from './Mail.svg'
-import Password from './Password.svg'
 import Arrow from './Arrow_Right_SM.svg'
 import { useState } from 'react'
 
@@ -13,6 +12,8 @@ function Login() {
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false); // State for password visibility
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -39,6 +40,10 @@ function Login() {
     }
 
     setIsLoading(false);
+  }
+
+  const togglePasswordVisibility = () => {
+    setIsPasswordVisible(!isPasswordVisible); // Toggle password visibility
   }
 
   if (isLoading) {
@@ -77,14 +82,25 @@ function Login() {
             </div>
 
             <div className="flex relative ">
-              <input onChange={(event) => setPassword(event.target.value)} className="rounded-xl w-378px h-67px p-5" type="password" id="Password" placeholder=" Password" />
-              <img className="size-7 absolute right-3 top-5" src={Password} alt="Envelope" />
+              <input 
+                onChange={(event) => setPassword(event.target.value)} 
+                className="rounded-xl w-378px h-67px p-5" 
+                type={isPasswordVisible ? "text" : "password"} // Toggle between text and password
+                id="Password" 
+                placeholder=" Password" 
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-5 text-blue-black hover:text-black font-bold"
+                onClick={togglePasswordVisibility}
+              >
+                {isPasswordVisible ? "Hide" : "Show"}
+              </button>
             </div>
 
             <div className="flex relative top-16 ">
               <button type='button' onClick={handleLogin} className='hover:bg-pageBg1 rounded-xl w-378px h-67px p-5 bg-white font-bold text-20px'>Login</button>
               <img className="size-6 absolute right-32 top-6" src={Arrow} alt="Envelope" />
-
             </div>
           </div>
         </div>
@@ -94,4 +110,4 @@ function Login() {
   )
 }
 
-export default Login
+export default Login;

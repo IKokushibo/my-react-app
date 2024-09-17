@@ -49,7 +49,7 @@ function AddNewDepartment() {
         <Sidebar />
 
         {/* Main Content */}
-        <main className="w-full lg:w-3/4 p-10 bg-gray-100">
+        <main className="w-4/5 p-10">
           <h1 className="text-3xl font-bold mb-8">Department Section</h1>
 
           <div className="bg-white p-8 shadow-lg rounded-md">

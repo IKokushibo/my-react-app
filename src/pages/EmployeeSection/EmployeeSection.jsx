@@ -62,7 +62,7 @@ function EmployeeSection() {
     try {
       const url = `/users/admin/employees/update-employee/${selectedEmployee["user-id"]}`;
       const response = await axios.put(url, {
-        "department-id" : departmentId,
+        "department-id" : departmentId ? departmentId : 0,
         "employee-id" : selectedEmployee['employee-id'],
         "first-name" : selectedEmployee['first-name'],
         "middle-name" : selectedEmployee['middle-name'],
@@ -116,7 +116,6 @@ function EmployeeSection() {
         setEmployees(response.data);
         const deptResponse = await axios.get("/users/departments");
         setDepartments(deptResponse.data);
-
       } catch (error) {
         setError(error);
       }
@@ -135,6 +134,14 @@ function EmployeeSection() {
         <Loading />
       </>
     );
+  }
+
+  if(isError){
+    if(error.status === 404){
+      alert(error.response.data.message)
+    }
+
+    setIsError(value => !value);
   }
 
   return (

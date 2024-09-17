@@ -39,13 +39,15 @@ function Sidebar() {
   const logoutHandler = async () => {
     try {
       setIsLoading(true);
-      const url = '/users/log-out';
+      const url = '/users/auth/logout'; // Make sure this matches your actual logout endpoint
       const response = await axios.post(url);
+      console.log(response);
       if (response.status === 200) {
         localStorage.removeItem('accessToken');
-        navigate('/login-admin');
+        navigate('/login-admin'); // Redirect to login after successful logout
       }
     } catch (error) {
+      console.error('Logout error:', error);
       setError(error);
       setIsError(true);
     }
@@ -100,12 +102,13 @@ function Sidebar() {
             </li>
             <li className="mb-5">
               <button onClick={logoutHandler} className="flex items-center space-x-2 hover:bg-blue-700 p-2 rounded-md w-full">
-                <img src={Logout} className='size-5' alt="Logout" />
+                <img src={Logout} className="size-5" alt="Logout" />
                 <span className="text-xl">Logout</span>
               </button>
             </li>
           </ul>
         </nav>
+        {isError && <p className="text-red-500">Logout failed. Please try again.</p>}
       </aside>
     </>
   );

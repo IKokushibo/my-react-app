@@ -112,22 +112,6 @@ function Dashboard() {
     }
   }, []);
 
-  const logoutHandler = async () => {
-    try {
-      setIsLoading(true);
-      const url = "/users/auth/logout";
-      const response = await axios.post(url);
-      console.log(response);
-      if (response.status === 200) {
-        navigate("/login-admin");
-        localStorage.removeItem("accessToken");
-      }
-    } catch (error) {
-      setError(error);
-      setIsError(true);
-    }
-    setIsLoading(true);
-  }
 
   const pendingLeaveLength = leaveApplications ? leaveApplications.filter((leave) => leave['leave-status'] === "PENDING").length : 0;
   const approvedLeaveLength = leaveApplications ? leaveApplications.filter((leave) => leave['leave-status'] === "APPROVED").length : 0;
@@ -170,7 +154,7 @@ function Dashboard() {
         <main className="w-4/5 p-10">
           <div className='flex justify-between'>
             <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
-            <img src={LogoutIcon} onClick={logoutHandler} className='size-5 mt-2' alt="" />
+            
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
