@@ -15,9 +15,9 @@ function LeaveDetails() {
   const [disapprovalReasonB, setDisapprovalReasonB] = useState('');
   const [disapprovalReasonD, setDisapprovalReasonD] = useState('');
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
-  const [daysWithPay, setDaysWithPay] = useState('');
-  const [daysWithoutPay, setDaysWithoutPay] = useState('');
-  const [others, setOthers] = useState('');
+  const [daysWithPay, setDaysWithPay] = useState(0);
+  const [daysWithoutPay, setDaysWithoutPay] = useState(0);
+  const [others, setOthers] = useState("");
   const sigCanvasHR = useRef({});
   const sigCanvasSupervisor = useRef({});
   const sigCanvasManager = useRef({});
@@ -37,8 +37,11 @@ function LeaveDetails() {
   const [hrDecision, setHrDecision] = useState("PENDING");
   const [departmentHeadDecision, setDepartmentHeadDecision] = useState("PENDING");
   const [supervisorDecision, setSupervisorDecision] = useState("PENDING");
+  const [generalManagerDecision, setGeneralManagerDecision] = useState("PENDING");
 
   const [lessThisApplication, setLessThisApplication] = useState(0);
+
+  const [user, setUser] = useState({});
 
   // actions
   const [hrAction, setHrAction] = useState();
@@ -46,13 +49,10 @@ function LeaveDetails() {
   const [departmentHeadAction, setDepartmentHeadAction] = useState();
   const [generalManagerAction, setGeneralManagerAction] = useState();
 
-  // signatures
-  const [generalManagerRecommendation, setGeneralManagerRecommendation] = useState("");
+  const [deduction, setDeduction] = useState(0);
+  const [balance, setBalance] = useState(0);
 
-  const [htSignature, setHrSignature] = useState(null);
-  const [departmentHeadSignature, setDepartmentHeadSignature] = useState(null);
-  const [supervisorSignature, setSupervisorSignature] = useState(null);
-  const [generalManagerSignature, setGeneralManagerSignature] = useState(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   const navigate = useNavigate();
 
@@ -77,7 +77,7 @@ function LeaveDetails() {
   };
 
   const handleAction = () => {
-    submitGeneralManagerDecision(selectedAction);
+    submitGeneralManagerDecision(sigCanvasGM);
     closeModal();
   };
 
@@ -91,10 +91,13 @@ function LeaveDetails() {
     setSignature(signatureData);
   };
 
-  const getCanvasWidth = () => {
-    return Math.min(window.innerWidth * 0.8, 800);
+  const getCanvasWidthForGeneralManager = () => {
+    return Math.min(window.innerWidth * 0.8, 650);
   };
 
+  const getCanvasWidth = () => {
+    return Math.min(window.innerWidth * 0.8, 780);
+  };
 
   useEffect(() => {
     const getLeaveApplication = async () => {
@@ -103,13 +106,17 @@ function LeaveDetails() {
         const url1 = `/users/leaves/${id}`;
         const response1 = await axios.get(url1);
         setLeave(response1.data);
+        setLessThisApplication(response1.data['working-days-applied'])
         setActions(response1.data.actions);
-        console.log(response1.data.actions);
         const userId = response1.data.user['user-id'];
 
         const url2 = `/users/remaining-leaves/${userId}`;
         const response2 = await axios.get(url2);
         setUserLeaves(response2.data);
+
+        const url3 = "/users/me";
+        const response3 = await axios.get(url3);
+        setUser(response3.data);
       } catch (error) {
         setError(error);
         setIsError(true);
@@ -117,7 +124,19 @@ function LeaveDetails() {
       setIsLoading(false);
     }
     getLeaveApplication();
-  }, []);
+  }, [isMounted]);
+
+  useEffect(() => {
+    if(leave){
+      const userLeaves = leave.user.userLeaveList;
+      for(let i = 0; i < userLeaves.length; i++){
+        if(leave['type-of-leave-id'] === userLeaves[i]['type-of-leave'].id){
+         setBalance(userLeaves[i]['remaining-leave'] - ((lessThisApplication + Number(deduction))));
+         break;
+        }
+      }
+    }
+  }, [leave, lessThisApplication, deduction]);
 
   useEffect(() => {
     if (actions.length > 0) {
@@ -125,15 +144,21 @@ function LeaveDetails() {
         switch (action.role) {
           case "HR":
             setHrAction(action);
+            setHrDecision(action.decision)
+            setLessThisApplication(action['less-this-application'])
+            setDeduction(action.deduction)
             break;
           case "SUPERVISOR":
             setSupervisorAction(action);
+            setSupervisorDecision(action.decision)
             break;
           case "DEPARTMENT_HEAD":
             setDepartmentHeadAction(action);
+            setDepartmentHeadDecision(action.decision)
             break;
           case "GENERAL_MANAGER":
             setGeneralManagerAction(action);
+            setGeneralManagerDecision(action.decision)
             break;
           default:
             break;
@@ -149,84 +174,159 @@ function LeaveDetails() {
 
 
 
-  const submitHrDecision = async (decision) => {
+  const submitHrDecision = async (sigCanvas) => {
     try {
       setIsLoading(true);
       const url = "/users/admin/apply-leave/sign";
-      const response = await axios.post(url, {
-        "reason-of-rejection": disapprovalReasonB,
-        "less-this-application": lessThisApplication,
-        "signature-base64": signature,
-        "leave-request-id": id,
-        "decision": decision
-      });
-      if (response.status === 201) {
-        alert(response.data);
+      if (hrAction) {
+        const response = await axios.post(url, {
+          "reason-of-rejection": disapprovalReasonB,
+          "less-this-application": lessThisApplication,
+          "signature-base64": hrAction.signature,
+          "leave-request-id": id,
+          "decision": hrDecision,
+          "deduction-for-under-time": deduction
+        });
+        if (response.status === 201) {
+          alert(response.data);
+        }
+      } else {
+        const signature = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
+        const response = await axios.post(url, {
+          "reason-of-rejection": disapprovalReasonB,
+          "less-this-application": lessThisApplication,
+          "signature-base64": signature,
+          "leave-request-id": id,
+          "decision": hrDecision,
+          "deduction-for-under-time": deduction
+        });
+        if (response.status === 201) {
+          alert(response.data);
+        }
+      }
+    } catch (error) {
+      console.log(error)
+      setIsError(true);
+      setError(error);
+    }
+    setIsLoading(false);
+    setIsMounted(value => !value);
+  }
+
+  const submitDepartmentHeadDecision = async (sigCanvas) => {
+    try {
+      setIsLoading(true);
+      if (departmentHeadAction) {
+        const noValue = 0;
+        const url = "/users/admin/apply-leave/sign";
+        const response = await axios.post(url, {
+          "reason-of-rejection": "",
+          "less-this-application": noValue,
+          "signature-base64": departmentHeadAction.signature,
+          "leave-request-id": id,
+          "decision": departmentHeadDecision
+        });
+        if (response.status === 201) {
+          alert(response.data);
+        }
+      } else {
+        const signature = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
+        const noValue = 0;
+        const url = "/users/admin/apply-leave/sign";
+        const response = await axios.post(url, {
+          "reason-of-rejection": "",
+          "less-this-application": noValue,
+          "signature-base64": signature,
+          "leave-request-id": id,
+          "decision": departmentHeadDecision
+        });
+        if (response.status === 201) {
+          alert(response.data);
+        }
       }
     } catch (error) {
       setIsError(true);
       setError(error);
     }
     setIsLoading(false);
+    setIsMounted(value => !value);
   }
 
-  const submitDepartmentHeadDecision = async (decision) => {
+  const submitSupervisorDecision = async (sigCanvas) => {
     try {
-      const noValue = 0;
       setIsLoading(true);
-      const url = "/users/admin/apply-leave/sign";
-      const response = await axios.post(url, {
-        "reason-of-rejection": "",
-        "less-this-application": noValue,
-        "signature-base64": signature,
-        "leave-request-id": id,
-        "decision": decision
-      });
+      if (supervisorAction) {
+        const noValue = 0;
+        const url = "/users/admin/apply-leave/sign";
+        const response = await axios.post(url, {
+          "reason-of-rejection": "",
+          "less-this-application": noValue,
+          "signature-base64": supervisorAction.signature,
+          "leave-request-id": id,
+          "decision": supervisorDecision
+        });
+
+        if (response.status === 201) {
+          alert(response.data);
+        }
+      } else {
+        const signature = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
+        const noValue = 0;
+        const url = "/users/admin/apply-leave/sign";
+        const response = await axios.post(url, {
+          "reason-of-rejection": "",
+          "less-this-application": noValue,
+          "signature-base64": signature,
+          "leave-request-id": id,
+          "decision": supervisorDecision
+        });
+
+        if (response.status === 201) {
+          alert(response.data);
+        }
+      }
+
+      if (response.status === 201) {
+        alert(response.data);
+      }
     } catch (error) {
       setIsError(true);
       setError(error);
-    }
-    setIsLoading(false);
-  }
-
-  const submitSupervisorDecision = async (decision) => {
-    try {
-      const noValue = 0;
-      setIsLoading(true);
-      const url = "/users/admin/apply-leave/sign";
-      const response = await axios.post(url, {
-        "reason-of-rejection": "",
-        "less-this-application": noValue,
-        "signature-base64": signature,
-        "leave-request-id": id,
-        "decision": decision
-      });
-
-    } catch (error) {
-      setIsError(true);
-      setError(error);
 
     }
     setIsLoading(false);
+    setIsMounted(value => !value);
   }
 
-  const submitGeneralManagerDecision = async (decision) => {
+  const submitGeneralManagerDecision = async (sigCanvas) => {
     try {
-      const noValue = 0;
       setIsLoading(true);
+      const signature = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
+      const noValue = 0;
       const url = "/users/admin/apply-leave/sign";
       const response = await axios.post(url, {
         "reason-of-rejection": disapprovalReasonD,
         "less-this-application": noValue,
         "signature-base64": signature,
         "leave-request-id": id,
-        "decision": decision
+        "decision": generalManagerDecision
       });
+      if (response.status === 201) {
+        const responseForFinalDecision = await axios.post(`/users/admin/leave/${id}/decide`,
+          {
+            "days-with-pay": daysWithPay,
+            "days-without-pay": daysWithoutPay,
+            others,
+            "disapproved-due-to": disapprovalReasonD
+          });
+        console.log(responseForFinalDecision);
+      }
     } catch (error) {
       isError(true);
       setError(error);
     }
     setIsLoading(false);
+    setIsMounted(value => !value);
   }
 
   if (isLoading) {
@@ -253,9 +353,8 @@ function LeaveDetails() {
       navigate("/admin/pending-leave-type");
       return;
     }
-    setIsError(false);
+    setIsError(value => !value);
   }
-
 
   return (
     <>
@@ -308,15 +407,13 @@ function LeaveDetails() {
               </div>
             </div>
 
-
-
             <div className="mb-6">
               <h2 className="text-lg font-semibold">Admin Remark:</h2>
               {leave ? <p className={leave['leave-status'] === 'PENDING' ? 'text-yellow-500' : leave['leave-status'] === 'APPROVED' ? 'text-green-500' : 'text-red-500'}>{leave['leave-status']}</p> : <p></p>}
             </div>
 
 
-            <div className="flex justify-end">
+            <div className={`flex justify-end ${user.role !== "GENERAL_MANAGER" ? "hidden" : ""}`}>
               <button
                 onClick={openModal}
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
@@ -337,7 +434,7 @@ function LeaveDetails() {
                   As of {currentDateTime.toLocaleDateString()} {currentDateTime.toLocaleTimeString()}
                 </p>
 
-                {hrAction ? <table className="w-full border border-gray-300">
+                <table className="w-full border border-gray-300">
                   <thead className='w-full'>
                     <tr className="bg-gray-200 w-full">
                       <th className="border border-gray-300 px-4 py-2 text-center"> </th>
@@ -362,48 +459,8 @@ function LeaveDetails() {
                       <td colSpan="4" className="border border-gray-300 px-4 py-2">
                         <input
                           type="number"
-                          disabled
-                          value={hrAction['less-this-application']}
-                          onChange={(e) => setLessThisApplication(e.target.value)}
-                          className="border text-center p-1 rounded w-full"
-                        />
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="border border-gray-300 px-4 py-2">Balance</td>
-                      {Array.isArray(commonLeaveToShow) && commonLeaveToShow.map((element, index) => (
-                        <td key={index} className="border border-gray-300 px-4 text-center py-2">
-                          {leave['type-of-leave-id'] === element['type-of-leave'].id ? (element['remaining-leave'] - hrAction['less-this-application'] < 0 ? 0 : element['remaining-leave'] - hrAction['less-this-application']) : element['remaining-leave']}
-                        </td>
-                      ))}
-                    </tr>
-                  </tbody>
-                </table> : <table className="w-full border border-gray-300">
-                  <thead className='w-full'>
-                    <tr className="bg-gray-200 w-full">
-                      <th className="border border-gray-300 px-4 py-2 text-center"> </th>
-                      {Array.isArray(commonLeaveToShow) && commonLeaveToShow.map((element, index) => (
-                        <th key={index} className="border border-gray-300 px-4 py-2 text-center">
-                          {element['type-of-leave']['leave-type']}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="border border-gray-300 px-4 py-2">Total Earned</td>
-                      {Array.isArray(commonLeaveToShow) && commonLeaveToShow.map((element, index) => (
-                        <td key={index} className="border border-gray-300 px-4 text-center py-2">
-                          {element['remaining-leave']}
-                        </td>
-                      ))}
-                    </tr>
-                    <tr>
-                      <td className="border border-gray-300 px-4 py-2">Less this application</td>
-                      <td colSpan="4" className="border border-gray-300 px-4 py-2">
-                        <input
-                          type="number"
-                          value={hrAction ? hrAction['less-this-application'] : lessThisApplication}
+                          disabled={user.role !== "HR"}
+                          value={lessThisApplication}
                           onChange={(e) => setLessThisApplication(e.target.value)}
                           className="border text-center p-1 rounded w-full"
                         />
@@ -418,7 +475,18 @@ function LeaveDetails() {
                       ))}
                     </tr>
                   </tbody>
-                </table>}
+                </table>
+              </div>
+
+              <div className='p-6 space-x-4'>
+                <label >Deduction</label>
+                <input
+                  value={deduction}
+                  onChange={(e) => setDeduction(e.target.value)}
+                  className='h-8 border rounded p-2' type="text"
+                  disabled={user.role !== "HR"}
+                />
+                {balance < 0 ? <h1 className='text-red-700'>* Insufficient credit</h1> : ""}
               </div>
 
 
@@ -436,9 +504,9 @@ function LeaveDetails() {
                     <div className="flex items-center ">
                       <label className="mr-2 font-bold">Status:</label>
                       <select
-                        disabled={hrAction ? true : false}
-                        value={hrAction ? hrAction.decision : hrDecision}
-                        onChange={(e) => submitHrDecision(e.target.value)}
+                        value={hrDecision}
+                        disabled={user.role !== "HR" || balance < 0}
+                        onChange={(e) => setHrDecision(e.target.value)}
                         className="border rounded p-2 mb-1"
                       >
                         <option value="PENDING">Pending</option>
@@ -498,13 +566,15 @@ function LeaveDetails() {
                     type="button"
                     onClick={() => clearSignature(sigCanvasHR)}
                     className="bg-gray-500 text-white font-bold py-2 px-4 rounded"
+                    disabled={user.role !== "HR"}
                   >
                     Clear
                   </button>
                   <button
                     type="button"
-                    onClick={() => saveSignature(sigCanvasHR)}
+                    onClick={() => submitHrDecision(sigCanvasHR)}
                     className="bg-blue-500 text-white font-bold py-2 px-4 rounded"
+                    disabled={user.role !== "HR"}
                   >
                     Save
                   </button>
@@ -520,20 +590,12 @@ function LeaveDetails() {
                 <p>For disapproval due to:</p>
                 <textarea
                   value={disapprovalReasonB}
+                  disabled={user.role !== "HR"}
                   onChange={(e) => setDisapprovalReasonB(e.target.value)}
                   className="border rounded w-full p-2 mt-2"
                   placeholder="Add reason for disapproval here..."
                   rows={3}
                 />
-                <button
-                  type="button"
-                  onClick={() =>
-                    console.log("Note Saved: ", disapprovalReasonB)
-                  }
-                  className="bg-blue-500 text-white font-bold py-2 px-4 mt-2 rounded-md"
-                >
-                  Save Note
-                </button>
               </div>
 
               {/* Supervisor Signature */}
@@ -547,25 +609,13 @@ function LeaveDetails() {
                     </label>
 
                     {/* Dropdown for Supervisor Decision */}
-                    {supervisorAction ? <>
+                    <>
                       <div className="flex items-center ">
                         <label className="mr-2 font-bold">Status:</label>
                         <select
-                          disabled
-                          value={supervisorAction.decision}
-                          className="border rounded p-2 mb-1"
-                        >
-                          <option value="PENDING">Pending</option>
-                          <option value="APPROVED">Approved</option>
-                          <option value="DECLINED">Declined</option>
-                        </select>
-                      </div>
-                    </> : <>
-                      <div className="flex items-center ">
-                        <label className="mr-2 font-bold">Status:</label>
-                        <select
+                          disabled={user.role !== "SUPERVISOR"}
                           value={supervisorDecision}
-                          onChange={(e) => submitSupervisorDecision(e.target.value)}
+                          onChange={(e) => setSupervisorDecision(e.target.value)}
                           className="border rounded p-2 mb-1"
                         >
                           <option value="PENDING">Pending</option>
@@ -573,8 +623,7 @@ function LeaveDetails() {
                           <option value="DECLINED">Declined</option>
                         </select>
                       </div>
-                    </>}
-
+                    </>
                   </div>
 
                   {/* Label for status with color */}
@@ -622,14 +671,14 @@ function LeaveDetails() {
                   <img src={supervisorAction.signature} alt="" />
                 </> : <>
                   <SignatureCanvas
-                  ref={sigCanvasSupervisor}
-                  penColor="black"
-                  canvasProps={{
-                    width: getCanvasWidth(),
-                    height: 200,
-                    className: "border w-full p-2 rounded",
-                  }}
-                />
+                    ref={sigCanvasSupervisor}
+                    penColor="black"
+                    canvasProps={{
+                      width: getCanvasWidth(),
+                      height: 200,
+                      className: "border w-full p-2 rounded",
+                    }}
+                  />
                 </>}
 
                 <div className="mt-2 flex space-x-4">
@@ -637,13 +686,15 @@ function LeaveDetails() {
                     type="button"
                     onClick={() => clearSignature(sigCanvasSupervisor)}
                     className="bg-gray-500 text-white font-bold py-2 px-4 rounded"
+                    disabled={user.role !== "SUPERVISOR"}
                   >
                     Clear
                   </button>
                   <button
                     type="button"
-                    onClick={() => saveSignature(sigCanvasSupervisor)}
+                    onClick={() => submitSupervisorDecision(sigCanvasSupervisor)}
                     className="bg-blue-500 text-white font-bold py-2 px-4 rounded"
+                    disabled={user.role !== "SUPERVISOR"}
                   >
                     Save
                   </button>
@@ -660,34 +711,19 @@ function LeaveDetails() {
                       Signature (Div. / Dept. Manager):
                     </label>
 
-                    {departmentHeadAction ? <>
-                      <div className="flex items-center ">
-                        <label className="mr-2 font-bold">Status:</label>
-                        <select
-                          disabled
-                          value={departmentHeadAction.decision}
-                          className="border rounded p-2 mb-1"
-                        >
-                          <option value="PENDING">Pending</option>
-                          <option value="APPROVED">Approved</option>
-                          <option value="DECLINED">Declined</option>
-                        </select>
-                      </div>
-                    </> : <>
-                      <div className="flex items-center ">
-                        <label className="mr-2 font-bold">Status:</label>
-                        <select
-                          value={departmentHeadDecision}
-                          onChange={(e) => submitDepartmentHeadDecision(e.target.value)}
-                          className="border rounded p-2 mb-1"
-                        >
-                          <option value="PENDING">Pending</option>
-                          <option value="APPROVED">Approved</option>
-                          <option value="DECLINED">Declined</option>
-                        </select>
-                      </div></>}
-
-
+                    <div className="flex items-center ">
+                      <label className="mr-2 font-bold">Status:</label>
+                      <select
+                        disabled={user.role !== "DEPARTMENT_HEAD"}
+                        value={departmentHeadDecision}
+                        onChange={(e) => setDepartmentHeadDecision(e.target.value)}
+                        className="border rounded p-2 mb-1"
+                      >
+                        <option value="PENDING">Pending</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="DECLINED">Declined</option>
+                      </select>
+                    </div>
                   </div>
 
                   {/* Label for status with color */}
@@ -745,13 +781,15 @@ function LeaveDetails() {
                     type="button"
                     onClick={() => clearSignature(sigCanvasManager)}
                     className="bg-gray-500 text-white font-bold py-2 px-4 rounded-md"
+                    disabled={user.role !== "DEPARTMENT_HEAD"}
                   >
                     Clear
                   </button>
                   <button
                     type="button"
-                    onClick={() => saveSignature(sigCanvasManager)}
+                    onClick={() => submitDepartmentHeadDecision(sigCanvasManager)}
                     className="bg-blue-500 text-white font-bold py-2 px-4 rounded-md"
+                    disabled={user.role !== "DEPARTMENT_HEAD"}
                   >
                     Save
                   </button>
@@ -773,6 +811,7 @@ function LeaveDetails() {
                     value={daysWithPay}
                     onChange={(e) => setDaysWithPay(e.target.value)}
                     className="border p-1 rounded w-24"
+                    disabled={user.role !== "GENERAL_MANAGER"}
                   />
                 </div>
                 <div className="flex items-center mb-2">
@@ -783,6 +822,7 @@ function LeaveDetails() {
                     type="number"
                     id="daysWithoutPay"
                     value={daysWithoutPay}
+                    disabled={user.role !== "GENERAL_MANAGER"}
                     onChange={(e) => setDaysWithoutPay(e.target.value)}
                     className="border p-1 rounded w-24"
                   />
@@ -792,9 +832,10 @@ function LeaveDetails() {
                     Others (Specify):
                   </label>
                   <input
-                    type="number"
+                    type="text"
                     id="others"
                     value={others}
+                    disabled={user.role !== "GENERAL_MANAGER"}
                     onChange={(e) => setOthers(e.target.value)}
                     className="border p-1 rounded w-24"
                   />
@@ -810,61 +851,12 @@ function LeaveDetails() {
               </h3>
               <textarea
                 value={disapprovalReasonD}
+                disabled={user.role !== "GENERAL_MANAGER"}
                 onChange={(e) => setDisapprovalReasonD(e.target.value)}
                 className="border rounded w-full p-2"
                 placeholder="Add reason for disapproval here..."
                 rows={3}
               />
-              <button
-                type="button"
-                onClick={() => console.log("Note Saved: ", disapprovalReasonD)}
-                className="bg-blue-500 text-white font-bold py-2 px-4 mt-2 rounded-md"
-              >
-                Save Note
-              </button>
-            </div>
-
-            {/* General Manager*/}
-            <div className="mb-8 p-6 border rounded-lg">
-              <div className="flex items-center justify-between">
-                {/* Flexbox for Signature Label and Dropdown */}
-                <div className="flex items-center space-x-4">
-                  {/* Label for signature */}
-                  <label className="text-lg font-semibold">
-                    Signature (General Manager):
-                  </label>
-                </div>
-              </div>
-
-              {generalManagerAction ? <>
-                <img src={generalManagerAction.signature} alt="" />
-              </> : <>
-                <SignatureCanvas
-                ref={sigCanvasGM}
-                penColor="black"
-                canvasProps={{
-                  width: getCanvasWidth(),
-                  height: 200,
-                  className: "border w-full p-2 rounded",
-                }}
-              />
-              </>}
-              <div className="mt-2 flex space-x-4">
-                <button
-                  type="button"
-                  onClick={() => clearSignature(sigCanvasGM)}
-                  className="bg-gray-500 text-white font-bold py-2 px-4 rounded"
-                >
-                  Clear
-                </button>
-                <button
-                  type="button"
-                  onClick={() => saveSignature(sigCanvasGM)}
-                  className="bg-blue-500 text-white font-bold py-2 px-4 rounded"
-                >
-                  Save
-                </button>
-              </div>
             </div>
           </div>
         </main>
@@ -874,24 +866,48 @@ function LeaveDetails() {
       {
         isModalOpen && (
           <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex justify-center items-center">
-            <div className="bg-white p-8 rounded shadow-lg max-w-sm mx-auto">
+            <div className="bg-white p-8 rounded shadow-lg max-w-3xl mx-auto">
               <h2 className="text-xl font-semibold mb-4">Set Action</h2>
               <select
                 className="w-full p-2 border rounded mb-4"
-                value={selectedAction}
-                onChange={(e) => setSelectedAction(e.target.value)}
+                value={generalManagerDecision}
+                onChange={(e) => setGeneralManagerDecision(e.target.value)}
               >
                 <option value="">Select Action</option>
                 <option value="APPROVED">Approve</option>
                 <option value="DECLINED">Declined</option>
               </select>
-              <textarea
-                className="w-full p-2 border rounded mb-4"
-                rows="3"
-                placeholder="Description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
+              {/* General Manager*/}
+              <div className="mb-8 p-6 border rounded-lg">
+                <div className="flex items-center justify-between">
+                  {/* Flexbox for Signature Label and Dropdown */}
+                  <div className="flex items-center space-x-4">
+                    {/* Label for signature */}
+                    <label className="text-lg font-semibold">
+                      Signature (General Manager):
+                    </label>
+                  </div>
+                </div>
+
+                <SignatureCanvas
+                  ref={sigCanvasGM}
+                  penColor="black"
+                  canvasProps={{
+                    width: getCanvasWidthForGeneralManager(),
+                    height: 250,
+                    className: "border w-full p-2 rounded",
+                  }}
+                />
+                <div className="mt-2 flex space-x-4">
+                  <button
+                    type="button"
+                    onClick={() => clearSignature(sigCanvasGM)}
+                    className="bg-gray-500 text-white font-bold py-2 px-4 rounded"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
               <div className="flex justify-end space-x-4">
                 <button onClick={closeModal} className="bg-gray-500 text-white py-2 px-4 rounded">
                   Cancel

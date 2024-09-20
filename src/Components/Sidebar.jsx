@@ -39,7 +39,7 @@ function Sidebar() {
   const logoutHandler = async () => {
     try {
       setIsLoading(true);
-      const url = '/users/log-out';
+      const url = '/users/auth/logout';
       const response = await axios.post(url);
       if (response.status === 200) {
         localStorage.removeItem('accessToken');

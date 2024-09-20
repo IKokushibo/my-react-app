@@ -68,9 +68,7 @@ function ManageLeave() {
 
       <div className="flex h-screen bg-pageBg1">
         {/* Sidebar */}
-
         <Sidebar />
-
         {/* Main Content */}
         <main className="w-4/5 p-10">
           <h1 className="text-3xl font-bold mb-8"> {activeTab === "Pending" || activeTab === "Approved" || activeTab === "Declined" ? activeTab + " Leaves" : "Leave History"} </h1>

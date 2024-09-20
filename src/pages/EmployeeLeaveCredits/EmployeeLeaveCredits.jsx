@@ -20,7 +20,7 @@ const LeaveCreditsRemaining = () => {
         const url = "/users/me";
         const response = await axios.get(url);
         setRemainingLeaves(response.data.userLeaveList);
-        console.log(response.data.userLeaveList);
+        console.log(response)
       } catch (error) {
         setIsError(true);
         setError(error);
@@ -53,7 +53,7 @@ const LeaveCreditsRemaining = () => {
       alert("Network Error");
     }
 
-    setIsError(false);
+    setIsError(value => !value);
   }
 
   return (
@@ -76,8 +76,8 @@ const LeaveCreditsRemaining = () => {
             <div className='w-full flex flex-wrap gap-10 h-52 justify-start'>
               {Array.isArray(remainingLeaves) && remainingLeaves.map((element, index) => (
                 <div key={index} className="bg-blue-500 flex-wrap min-w-56 max-w-80 w-80 h-auto text-white p-4 rounded-lg shadow-lg flex flex-col items-center justify-center">
-                  <h2 className="text-5xl font-bold">{element.remainingLeave}</h2>
-                  <p className="mt-2 text-2xl font-semibold">{element.typeOfLeave.name}</p>
+                  <h2 className="text-5xl font-bold">{element['remaining-leave']}</h2>
+                  <p className="mt-2 text-2xl font-semibold">{element['type-of-leave']['leave-type']}</p>
                 </div>
               ))}
             </div>
